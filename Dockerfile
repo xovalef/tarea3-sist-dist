@@ -3,4 +3,5 @@ WORKDIR /app
 COPY package.json package-lock.json /app/
 RUN npm install
 
-CMD ["npm", "run", "start"]
+# CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]
