@@ -4,27 +4,27 @@ const fastify = require("fastify")({
 });
 
 client = new cassandra.Client({
-  contactPoints: ["cassandra-node1"],
-  localDataCenter: "datacenter1",
-  credentials: { username: "cassandra", password: "password123" },
+  contactPoints: [process.env.CONTACT_POINTS],
+  localDataCenter: process.env.LOCAL_DATACENTER,
+  credentials: { username: process.env.CASSANDRA_USERNAME, password: process.env.CASSANDRA_PASSWORD},
 });
 // FUNCIONES
-
+// FUNCION INSERTAR PACIENTE
 async function insertPaciente(nombre, apellido, rut, email, fecha_nacimiento){
-  const query2 = `SELECT COUNT(*) FROM ks1.paciente;`;
+  const query2 = `SELECT MAX(id) AS max_id FROM ks1.paciente;`;
   const totalPacientes = await client.execute(query2);
-  const idNewPaciente = totalPacientes.rows[0].count.low + 1;
+  const idNewPaciente = totalPacientes.rows[0].max_id + 1;
   const insertQueryPaciente = `INSERT INTO ks1.paciente(id,nombre, apellido, rut, email, fecha_nacimiento)
                         VALUES (${idNewPaciente},'${nombre}','${apellido}','${rut}','${email}','${fecha_nacimiento}');`;
   await client.execute(insertQueryPaciente);
 
   return (idNewPaciente);
 }
-
+// FUNCION INSERTAR RECETA
 async function insertReceta(idNewPaciente,comentario,farmacos,doctor){
-  const query3 = `SELECT COUNT(*) FROM ks2.recetas;`;
+  const query3 = `SELECT MAX(id) AS max_id FROM ks2.recetas;`;
   const totalRecetas = await client.execute(query3);
-  const idNewReceta = totalRecetas.rows[0].count.low + 1;
+  const idNewReceta = totalRecetas.rows[0].max_id + 1;
   const insertQueryReceta = `INSERT INTO ks2.recetas(id, id_paciente, comentario, farmacos, doctor)
                             VALUES (${idNewReceta}, ${idNewPaciente}, '${comentario}','${farmacos}','${doctor}');`;
   await client.execute(insertQueryReceta);
@@ -58,6 +58,7 @@ fastify.post("/create", async (request, reply) => {
   }
 });
 
+// EDITAR RECETA
 fastify.post("/edit", async (request, reply) => {
   const {id, comentario, farmacos, doctor} = request.body;
   const query = `SELECT id FROM ks2.recetas WHERE id = ${id};`;
@@ -77,6 +78,7 @@ fastify.post("/edit", async (request, reply) => {
   }
 });
 
+// ELIMINAR RECETA
 fastify.post("/delete", async (request, reply) => {
   const {id} = request.body;
   const query = `SELECT id FROM ks2.recetas WHERE id= ${id};`;
